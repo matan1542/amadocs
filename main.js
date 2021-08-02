@@ -1081,7 +1081,7 @@ const data = {
 }
 renderChart()
 function renderChart() {
-    console.log('entered chart')
+    const filterDataArr = findDiffData();
     am4core.ready(function () {
 
         // Themes begin
@@ -1125,38 +1125,41 @@ function renderChart() {
                 link.isHover = false;
             })
         })
-        networkSeries.data = findDiffData();
+        networkSeries.data = filterDataArr
     })
+    console.log('filterDataArr', filterDataArr, findDiffData())
 }
 
 function findDiffData() {
     const domainsInsArray = iterateThroughData(data, 'domains')
     const objInstances = mapData(domainsInsArray)
     const filterDataArr = filterData(data.systemDomains, objInstances)
-    console.log(filterDataArr)
     return filterDataArr
 }
 
 function filterData(jsonSystemDomains, objInstances) {
-    return jsonSystemDomains.map((micro, idx) => {
+    const res = jsonSystemDomains.map((micro, idx) => {
         const children = {
             name: micro.name,
             value: 1,
             children: micro.subDomains
         }
         delete micro.subDomains
-        children.children.forEach((subDom) => {
+        children.children.forEach((subDom,idx) => {
+            const subDomIdx = idx;
             const subDomCopy = subDom.msInstances
             delete subDom.msInstances
-            children.children = { ...subDom, name: 'subdomain_NAME_X', value: 1, children: subDomCopy }
-            children.children.children.forEach((instance, idx) => {
+            children.children[subDomIdx] = { ...subDom, value: 1, children: [...subDomCopy] }
+            children.children[subDomIdx].children.forEach((instance, idx) => {
                 if (!objInstances[instance.name.toLowerCase()]) {
-                    children.children.children[idx] = { ...instance, value: 1 }
+                    children.children[subDomIdx].children[idx] = { ...instance, value: 1 }
                 }
             })
         })
         return children
     })
+    console.log(res)
+    return res
 }
 //function will create an object with name property of the instance for 0(1) usage
 function mapData(instances) {
